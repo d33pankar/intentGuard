@@ -8,5 +8,6 @@ data/
 *.db
 artifacts/*.joblib
 artifacts/*.pkl
+artifacts/eval/
 .coverage
 .pytest_cache/

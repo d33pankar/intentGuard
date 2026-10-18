@@ -196,6 +196,23 @@ PYTHONPATH=./.deps python -m pytest tests/ -q
 # or: make test
 ```
 
+## Benchmark (frozen synthetic set, 62 items)
+
+```bash
+make eval        # test split: baseline + hf-zeroshot/direct
+make eval-full   # + literal and role styles
+```
+
+62 hand-labelled transcripts across 8 scenarios (see `datasets/README.md`
+for the annotation rules), split 22 train / 17 val / **23 test** in a frozen
+manifest. Tune on val, report on test, never tune on test. First test-split
+numbers (2026-10-18): baseline acc **0.65** (macro F1 0.58, review rate
+0.57, zero false stops/continues); hf-zeroshot/direct acc **0.48**
+(false-stop 1, polite-deflection 0.0 — deferrals collapse to DISENGAGED
+outside the 0.4–0.6 review band). The 5-probe story did not generalise:
+zero-shot is over-decisive where it should abstain. Next loop: widen/recalibrate
+the review band and reword deferral handling on **val**, then re-report.
+
 ## Roadmap
 
 - ✅ Milestone 0 — repo/environment inspection (this machine: Python 3.12,

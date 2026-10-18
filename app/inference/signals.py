@@ -13,9 +13,11 @@ from dataclasses import dataclass
 OPT_OUT_PATTERNS = (
     r"do not (call|contact|email|text|message) me",
     r"don't (call|contact|email|text|message) me",
+    r"do not call again",
     r"stop (calling|contacting|emailing|texting|messaging) me",
     r"remove me from .*list",
     r"take me off .*list",
+    r"take my number off",
     r"unsubscribe me",
     r"put me on (the |your )?do.?not.?call",
     r"\bdnc\b",
@@ -68,7 +70,9 @@ def bare_response_detected(text: str) -> bool:
     "Yes, go ahead"). Anything substantive ("Yes, I want to proceed…",
     "No thanks, not interested") scores normally.
     """
-    words = re.findall(r"[a-z]+", text.lower())  # splits "i'm" -> i, m
+    speech = re.sub(r"^(agent|customer)\s*:\s*", "", text.strip(),
+                    flags=re.IGNORECASE)
+    words = re.findall(r"[a-z]+", speech.lower())  # splits "i'm" -> i, m
     substance = [w for w in words if w not in _BARE_TOKENS]
     return len(substance) < 3
 

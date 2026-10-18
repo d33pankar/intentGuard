@@ -51,7 +51,7 @@
 
 ## 3. What is left (in recommended order)
 
-1. **Eval harness + labelled benchmark (starts M3/M6).** Fill `datasets/synthetic/` with the five scenario categories (clear interest, rejection, polite deflection, not-now, contradictory, channel disagreement, opt-outs), train/val/test splits with leakage guards, frozen manifests, runnable `eval` command reporting macro F1, confusion matrix, false-stop/continue rates, polite-deflection subset. *This unblocks every research claim.*
+1. **Eval harness + labelled benchmark (starts M3/M6).** Fill `datasets/synthetic/` with the five scenario categories (clear interest, rejection, polite deflection, not-now, contradictory, channel disagreement, opt-outs), train/val/test splits with leakage guards, frozen manifests, runnable `eval` command reporting macro F1, confusion matrix, false-stop/continue rates, polite-deflection subset. *This unblocks every research claim.* ✅ **DONE 2026-10-18** — 62 items, 23-test frozen manifest, `make eval`, first numbers in README (baseline 0.65 > zero-shot 0.48; honest miss list included).
 2. **M4 remainder.** `contact_attempts` + outcomes, first/last-contact derivation, replay tests.
 3. **Migrations.** Replace `create_all` with Alembic (spec explicitly asks).
 4. **M7 decision work.** Email/feedback inputs, fusion ladder, explicit cost matrix + threshold selection on validation data (H2, H3).
