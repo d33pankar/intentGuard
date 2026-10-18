@@ -1,0 +1,35 @@
+[project]
+name = "intentguard"
+version = "0.1.0"
+description = "IntentGuard: explainable, cost-sensitive customer disengagement detection (WTS workflow)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.115.6",
+  "uvicorn==0.34.0",
+  "pydantic==2.10.4",
+  "pydantic-settings==2.7.0",
+  "python-multipart==0.0.20",
+  "scikit-learn==1.6.1",
+  "scipy==1.14.1",
+  "numpy==2.2.1",
+  "sqlalchemy==2.0.36",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest==8.3.4",
+  "httpx==0.28.1",
+]
+hf = [
+  "transformers==4.48.3",
+  "torch==2.5.1",
+  "huggingface_hub==0.27.1",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

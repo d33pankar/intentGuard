@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.deps/
+.env
+data/
+*.db
+artifacts/*.joblib
+artifacts/*.pkl
+.coverage
+.pytest_cache/

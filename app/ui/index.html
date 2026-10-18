@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>IntentGuard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f7f7f8; --card: #ffffff; --ink: #131316; --muted: #71717a;
+    --line: #e9e9ec; --accent: #4f46e5; --accent-soft: #eef2ff;
+    --green: #15803d; --green-bg: #f0fdf4;
+    --red: #b91c1c; --red-bg: #fef2f2;
+    --amber: #b45309; --amber-bg: #fffbeb;
+    --radius: 16px;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px -12px rgba(0,0,0,.12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Inter", -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* ---------- top nav ---------- */
+  nav.top {
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    background: rgba(255,255,255,.82); border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: 1240px; margin: 0 auto; padding: 0 32px;
+    display: flex; align-items: center; gap: 28px; height: 62px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; margin-right: 8px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #9333ea); }
+  .brand b { font-size: 16.5px; font-weight: 800; letter-spacing: -0.02em; }
+  .tabs { display: flex; gap: 4px; }
+  .tabs button {
+    font-family: inherit; font-size: 14px; font-weight: 500; color: var(--muted);
+    background: none; border: none; padding: 8px 14px; cursor: pointer; border-radius: 9px;
+  }
+  .tabs button:hover { color: var(--ink); background: #f1f1f4; }
+  .tabs button.active { color: var(--ink); font-weight: 600; background: #ececf1; }
+  .status { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
+  /* ---------- layout ---------- */
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 32px 32px 72px; }
+  .hero { margin: 4px 0 24px; }
+  .hero h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; margin: 0; }
+  .hero p { color: var(--muted); font-size: 14.5px; margin: 6px 0 0; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 26px; margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 { font-size: 15px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .card p.sub { font-size: 13px; color: var(--muted); margin: 0 0 18px; }
+  label { display: block; font-size: 12.5px; font-weight: 600; margin: 14px 0 6px; }
+  label .opt { color: var(--muted); font-weight: 400; }
+  input[type="text"], select {
+    width: 100%; padding: 10px 12px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
+    transition: border-color .12s, box-shadow .12s;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .drop {
+    border: 1.5px dashed #d4d4d8; border-radius: 12px; padding: 30px 16px;
+    text-align: center; cursor: pointer; transition: all .15s ease; background: #fbfbfc;
+  }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop .big { font-size: 14.5px; font-weight: 700; }
+  .drop .small { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .drop .file { font-size: 13px; font-weight: 600; color: var(--accent); margin-top: 6px; }
+  button.primary {
+    margin-top: 20px; width: 100%; padding: 13px; font-size: 14.5px; font-weight: 700;
+    font-family: inherit; color: #fff; background: var(--ink);
+    border: none; border-radius: 11px; cursor: pointer; transition: transform .08s;
+  }
+  button.primary:hover { background: #000; }
+  button.primary:active { transform: scale(.99); }
+  button.primary:disabled { opacity: .5; cursor: wait; }
+  .error {
+    display: none; margin-top: 14px; font-size: 13.5px; color: var(--red);
+    background: var(--red-bg); border-radius: 10px; padding: 10px 12px;
+  }
+  .result { display: none; margin-top: 4px; }
+  .result-empty {
+    font-size: 13.5px; color: var(--muted); line-height: 1.6; text-align: center;
+    border: 1.5px dashed var(--line); border-radius: 12px; padding: 28px 18px;
+    background: #fafafb; margin-top: 4px;
+  }
+  .about-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 960px) { .about-grid { grid-template-columns: 1fr; } }
+  .fields-hint { font-size: 13px; color: var(--muted); line-height: 1.55;
+    background: #fafafb; border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; margin: 16px 0 4px; }
+  .field { margin-top: 0; min-width: 0; }
+  .field-row { display: grid; gap: 12px; margin-top: 12px; }
+  .field-row.c3 { grid-template-columns: repeat(3, 1fr); }
+  .field-row.c1 { grid-template-columns: 1fr; }
+  @media (max-width: 640px) { .field-row.c3 { grid-template-columns: 1fr; } }
+  .field .frow { display: flex; align-items: baseline; justify-content: space-between; }
+  .field label { margin: 0 0 6px; }
+  .flag { font-size: 11.5px; font-weight: 700; }
+  .flag.ok { color: var(--green); }
+  .flag.miss { color: var(--amber); }
+  .field input.found { border-color: #bbf7d0; background: #f6fef9; }
+  .field input.missing { border-color: #fcd34d; background: #fffbeb; }
+  .tpl-row { margin-top: 12px; font-size: 13px; }
+  .tpl-row a { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .model-blurb { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+  .example-wrap { position: relative; }
+  pre.example {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px;
+    line-height: 1.65; background: #131316; color: #e4e4e7;
+    border-radius: 10px; padding: 14px; overflow-x: auto; margin: 0;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .ghost-btn {
+    margin-top: 10px; font-family: inherit; font-size: 12.5px; font-weight: 600;
+    padding: 8px 14px; border-radius: 9px; cursor: pointer;
+    background: #fff; border: 1px solid var(--line); color: var(--ink);
+  }
+  .ghost-btn:hover { background: #f4f4f5; }
+  .pill {
+    display: inline-block; font-size: 12.5px; font-weight: 700;
+    padding: 5px 13px; border-radius: 999px; white-space: nowrap;
+  }
+  .pill.green { color: var(--green); background: var(--green-bg); }
+  .pill.red { color: var(--red); background: var(--red-bg); }
+  .pill.amber { color: var(--amber); background: var(--amber-bg); }
+  .score-line { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+  .bar { flex: 1; height: 8px; border-radius: 4px; background: #f0f0f3; overflow: hidden; }
+  .bar > div { height: 100%; background: linear-gradient(90deg, var(--accent), #9333ea); border-radius: 4px; }
+  .score-num { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .evidence { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.55; }
+  .evi-verdict { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .evi-prompt { margin-top: 8px; }
+  .evi-prompt summary { cursor: pointer; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .evi-prompt summary:hover { color: var(--ink); }
+  .evi-hyp { font-size: 12.5px; color: var(--muted); background: #f6f6f8; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; margin-top: 6px; line-height: 1.5; }
+  .evi-cues { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .evi-cues li { background: #fafafb; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; line-height: 1.55; }
+  .cue-chip { display: inline-block; font-weight: 700; background: #fff7e6; border: 1px solid #f0dfae; color: #8a6d1b; border-radius: 999px; padding: 1px 9px; margin-right: 6px; font-size: 12px; }
+  .cue-spk { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); margin-right: 6px; }
+  .cue-quote { color: var(--ink); }
+  .evi-weak { margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+  .evi-excerpt { margin-top: 10px; font-size: 13px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; line-height: 1.55; }
+  /* ---------- ingest grid + info rail ---------- */
+  .ingest-grid { display: grid; grid-template-columns: 7fr 5fr; gap: 20px; align-items: start; }
+  .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  .steps li { display: flex; gap: 12px; font-size: 13.5px; line-height: 1.5; }
+  .steps .n {
+    flex: none; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--ink); color: #fff; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .steps .n.soft { background: var(--accent-soft); color: var(--accent); }
+  .legend { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; font-size: 13px; }
+  .legend div { display: flex; align-items: center; gap: 10px; }
+  .legend span:last-child { color: var(--muted); }
+  details.spec { margin-top: 16px; font-size: 13px; color: var(--muted); }
+  details.spec summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  details.spec ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.7; }
+  /* ---------- dashboard ---------- */
+  .dash-head { display: flex; align-items: end; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+  .dash-head .sel { flex: 1; min-width: 240px; }
+  .dash-head label { margin-top: 0; }
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi { border: 1px solid var(--line); border-radius: 12px; padding: 16px 12px; text-align: center; background: #fff; }
+  .kpi .v { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .kpi .l { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .kpi.hero-kpi { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .kpi.hero-kpi .l { color: #a1a1aa; }
+  .charts { display: grid; grid-template-columns: 4fr 5fr 5fr; gap: 12px; margin-bottom: 20px; }
+  .panel { border: 1px solid var(--line); border-radius: 12px; padding: 18px; background: #fff; }
+  .panel h4 { font-size: 13px; font-weight: 700; margin: 0 0 12px; }
+  .legend2 { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 2; }
+  .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; }
+  .hbars { display: flex; flex-direction: column; gap: 9px; }
+  .hrow { display: grid; grid-template-columns: 52px 1fr 26px; gap: 8px; align-items: center; font-size: 12px; }
+  .hrow .t { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .hrow .n { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .htrack { height: 8px; background: #f0f0f3; border-radius: 4px; overflow: hidden; }
+  .htrack > div { height: 100%; background: var(--ink); border-radius: 4px; }
+  .activity { display: flex; align-items: flex-end; gap: 5px; height: 76px; }
+  .aday { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
+  .acol { width: 100%; max-width: 26px; background: linear-gradient(180deg, var(--accent), #9333ea);
+    border-radius: 4px; min-height: 3px; }
+  .acol.zero { background: #ececf0; }
+  .adate { font-size: 9px; color: var(--muted); }
+  /* ---------- table ---------- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table.scores { width: 100%; border-collapse: collapse; font-size: 13.5px; background: #fff; }
+  table.scores th {
+    text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); font-weight: 700; padding: 12px 16px;
+    border-bottom: 1px solid var(--line); background: #fafafb; white-space: nowrap;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+  }
+  table.scores th:hover { color: var(--ink); }
+  table.scores th .tri { font-size: 9px; margin-left: 6px; color: #d4d4d8; }
+  table.scores th.sorted .tri { color: var(--ink); }
+  table.scores td { padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  table.scores tr:last-child td { border-bottom: none; }
+  table.scores tr:hover td { background: #fafafc; }
+  .c-name { font-weight: 700; }
+  .c-mid { font-size: 12px; color: var(--muted); font-family: ui-monospace, monospace; }
+  .c-score { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .c-score .mini { width: 64px; height: 6px; background: #f0f0f3; border-radius: 3px; overflow: hidden; }
+  .c-score .mini > div { height: 100%; background: var(--ink); }
+  .c-time { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+  .c-model { font-size: 12px; color: var(--muted); font-family: ui-monospace, monospace; white-space: nowrap; }
+  .empty { font-size: 13.5px; color: var(--muted); padding: 22px; text-align: center; }
+  footer { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    font-size: 12px; color: var(--muted); margin-top: 4px; padding: 0 4px; }
+  footer a { color: var(--muted); }
+  @media (max-width: 1020px) {
+    .ingest-grid { grid-template-columns: 1fr; }
+    .kpis { grid-template-columns: repeat(3, 1fr); }
+    .charts { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) { .kpis { grid-template-columns: repeat(2, 1fr); } .wrap { padding: 20px 16px 56px; } .nav-inner { padding: 0 16px; } }
+</style>
+</head>
+<body>
+<nav class="top">
+  <div class="nav-inner">
+    <div class="brand"><span class="dot"></span><b>IntentGuard</b></div>
+    <div class="tabs">
+      <button id="tab-ingest" class="active">Ingest</button>
+      <button id="tab-dashboard">Dashboard</button>
+      <button id="tab-about">About</button>
+    </div>
+    <div class="status"><span class="pulse"></span><span id="status-text">connecting…</span></div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <!-- TAB 1 -->
+  <div id="pane-ingest">
+    <div class="hero">
+      <h2>Score a transcript</h2>
+      <p>Upload one call transcript — we match the customer, score intent, and save the result.</p>
+    </div>
+    <div class="ingest-grid">
+      <section class="card">
+        <div class="drop" id="drop">
+          <div class="big" id="drop-title">Drop your transcript here</div>
+          <div class="small">or click to browse &middot; .txt only &middot; max 200&nbsp;KB &middot; UTF-8</div>
+          <div class="file" id="file-name"></div>
+          <input type="file" id="file" accept=".txt" hidden />
+        </div>
+
+        <label for="mid">Known MID <span class="opt">— leave blank to match by phone / email</span></label>
+        <input type="text" id="mid" placeholder="e.g. MID-000001" autocomplete="off" />
+
+        <div id="fields-hint" class="fields-hint">Upload a transcript and the system will try to fill these fields. Anything it can’t find is highlighted for you to complete — scoring unlocks only when all seven are filled.</div>
+        <div id="fields"></div>
+        <div class="tpl-row"><a href="#" id="tpl-link">Download header template (.txt)</a></div>
+
+        <label for="model">Scoring model</label>
+        <select id="model"></select>
+        <div class="model-blurb" id="model-blurb"></div>
+
+        <div id="pstyle-wrap" style="display:none">
+          <label for="pstyle">Prompt style</label>
+          <select id="pstyle"></select>
+          <div class="model-blurb" id="pstyle-blurb"></div>
+        </div>
+
+        <button class="primary" id="score-btn">Score transcript</button>
+        <div class="error" id="error"></div>
+      </section>
+
+      <aside>
+        <section class="card" id="result-card">
+          <h3>Result</h3>
+          <div class="result-empty" id="result-empty">Score a transcript and the verdict lands here — pill, score bar, and quoted evidence.</div>
+          <div class="result" id="result" style="display:none">
+            <span class="pill" id="res-pill"></span>
+            <div class="score-line">
+              <div class="bar"><div id="res-bar"></div></div>
+              <span class="score-num" id="res-score"></span>
+            </div>
+            <div class="evidence" id="res-evidence"></div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- TAB 2 -->
+  <div id="pane-about" style="display:none">
+    <div class="hero">
+      <h2>About IntentGuard</h2>
+      <p>What the system does with your transcript — and how to read what comes back.</p>
+    </div>
+    <div class="about-grid">
+      <section class="card">
+        <h3>How it works</h3>
+          <p class="sub">One upload, three steps — nothing happens silently.</p>
+          <ol class="steps">
+            <li><span class="n">1</span><span><b>Extract fields.</b> The system reads product, call date and customer details from the transcript and highlights anything it can’t find — complete those to unlock scoring.</span></li>
+            <li><span class="n">2</span><span><b>Match identity.</b> Exact phone or email hit reuses that MID; no hit assigns a new one. Conflicts stop for human review.</span></li>
+            <li><span class="n">3</span><span><b>Score &amp; save.</b> The baseline model returns a 0–1 interest score with evidence; the event appends to the product’s fact table. History is never rewritten.</span></li>
+          </ol>
+        </section>
+        <section class="card">
+          <h3>An ideal transcript</h3>
+          <p class="sub">A short header up top means nothing needs typing — but details buried in the conversation work too.</p>
+          <div class="example-wrap">
+<pre class="example" id="ideal-example">Product ID: product_b
+Product Name: Product B
+Date of Call: 2026-10-17
+Customer Name: Aarav Sharma
+Customer Phone: +91 98765 43210
+Customer Email: aarav@example.com
+Customer Address: 12 MG Road, Patna
+---
+Agent: Good morning! Calling about our new savings plan. Would you like the details?
+Customer: Yes, I'm interested! Please sign me up and send everything over.</pre>
+            <button class="ghost-btn" id="copy-example">Copy example</button>
+          </div>
+          <details class="spec">
+            <summary>What makes it ideal?</summary>
+            <ul>
+              <li>All seven fields present as <b>Key: value</b> lines before the <b>---</b>.</li>
+              <li>Date in YYYY-MM-DD; phone with country code; full email.</li>
+              <li>Dialogue below the header, one speaker per line.</li>
+              <li>Missing a line? The system hunts the conversation for it and asks you to fill the rest.</li>
+            </ul>
+          </details>
+        </section>
+        <section class="card">
+          <h3>Reading a result</h3>
+          <p class="sub">Three outcomes. Errors never masquerade as decisions.</p>
+          <div class="legend">
+            <div><span class="pill green">Interested — continue</span><span>Keep engaging</span></div>
+            <div><span class="pill red">Not interested — stop</span><span>Disengage</span></div>
+            <div><span class="pill amber">Needs review</span><span>Score was 0.4–0.6</span></div>
+          </div>
+          <details class="spec">
+            <summary>Model &amp; limits</summary>
+            <ul>
+              <li>TF-IDF + Logistic Regression baseline, trained on 22 synthetic lines.</li>
+              <li>Scores are raw model outputs, not calibrated probabilities.</li>
+              <li>Explicit opt-outs (“do not call me”…) always resolve to stop.</li>
+              <li>“Not contacted” only ever means no contact history — never a model output.</li>
+            </ul>
+          </details>
+        </section>
+      </div>
+  </div>
+
+  <!-- TAB 3 -->
+  <div id="pane-dashboard" style="display:none">
+    <div class="hero">
+      <h2 id="dash-title">Product performance</h2>
+      <p>Latest score per customer. Read-only — refreshes every time you open this tab.</p>
+    </div>
+    <div class="dash-head">
+      <div class="sel">
+        <label for="dash-product">Product</label>
+        <select id="dash-product"></select>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi hero-kpi"><div class="v" id="k-total">–</div><div class="l">Customers scored</div></div>
+      <div class="kpi"><div class="v" id="k-int">–</div><div class="l">Interested %</div></div>
+      <div class="kpi"><div class="v" id="k-avg">–</div><div class="l">Avg score</div></div>
+      <div class="kpi"><div class="v" id="k-rev">–</div><div class="l">Needs review</div></div>
+      <div class="kpi"><div class="v" id="k-opt">–</div><div class="l">Opt-outs</div></div>
+    </div>
+
+    <div class="charts">
+      <div class="panel">
+        <h4>Resolution split</h4>
+        <svg id="donut" viewBox="0 0 120 120" style="width:132px;height:132px"></svg>
+        <div class="legend2" id="donut-legend"></div>
+      </div>
+      <div class="panel">
+        <h4>Score distribution</h4>
+        <div class="hbars" id="hbars"></div>
+      </div>
+      <div class="panel">
+        <h4>Activity · last 14 days</h4>
+        <div class="activity" id="activity"></div>
+      </div>
+    </div>
+
+    <section class="card" style="padding:0;overflow:hidden">
+      <div style="padding:22px 22px 14px"><h3>All product scores</h3>
+      <p class="sub" style="margin-bottom:0">Every customer’s latest score for the selected product.</p></div>
+      <div class="table-wrap" style="border:none;border-top:1px solid var(--line);border-radius:0">
+        <table class="scores">
+          <thead><tr>
+            <th data-key="name">Customer<span class="tri">▲</span></th><th data-key="resolution">Resolution<span class="tri">▲</span></th><th data-key="score">Score<span class="tri">▲</span></th><th data-key="call_date">Call date<span class="tri">▲</span></th><th data-key="model">Model<span class="tri">▲</span></th><th data-key="updated">Updated<span class="tri">▲</span></th>
+          </tr></thead>
+          <tbody id="results-body"></tbody>
+        </table>
+        <div class="empty" id="results-empty" style="display:none">No scored transcripts for this product yet. Score one in Ingest.</div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <span id="foot-model">IntentGuard · baseline-tfidf-lr-v1</span>
+    <span>Threshold τ = 0.5 · review band 0.4–0.6 · <a href="/docs">API docs</a></span>
+  </footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+// ---------- tabs ----------
+const panes = {
+  ingest: $("pane-ingest"),
+  dashboard: $("pane-dashboard"),
+  about: $("pane-about"),
+};
+const tabBtns = {
+  ingest: $("tab-ingest"),
+  dashboard: $("tab-dashboard"),
+  about: $("tab-about"),
+};
+function showTab(name) {
+  if (!panes[name]) name = "ingest";
+  for (const [k, el] of Object.entries(panes)) el.style.display = k === name ? "" : "none";
+  for (const [k, btn] of Object.entries(tabBtns)) btn.classList.toggle("active", k === name);
+  if (name === "dashboard") loadDashboard();
+  if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+}
+$("tab-ingest").addEventListener("click", () => showTab("ingest"));
+$("tab-dashboard").addEventListener("click", () => showTab("dashboard"));
+$("tab-about").addEventListener("click", () => showTab("about"));
+
+// ---------- header status ----------
+fetch("/ready").then((r) => r.json()).then((b) => {
+  $("status-text").textContent = b.model_version || "live";
+  $("foot-model").textContent = "IntentGuard · " + (b.model_version || "unknown model");
+}).catch(() => { $("status-text").textContent = "offline"; });
+
+// ---------- ingest ----------
+const drop = $("drop"), fileInput = $("file");
+drop.addEventListener("click", () => fileInput.click());
+["dragover", "dragenter"].forEach((e) =>
+  drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((e) =>
+  drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", (ev) => {
+  if (ev.dataTransfer.files.length) { fileInput.files = ev.dataTransfer.files; showFile(); }
+});
+fileInput.addEventListener("change", showFile);
+function showFile() {
+  const f = fileInput.files[0];
+  $("file-name").textContent = f ? "\u2713 " + f.name : "";
+  $("drop-title").textContent = f ? "Transcript ready" : "Drop your transcript here";
+  // A new file means a new scoring run — drop the previous result so a
+  // stale verdict is never mistaken for the fresh one.
+  $("result").style.display = "none";
+  $("result-empty").style.display = "block";
+  $("error").style.display = "none";
+  if (f) runExtraction(f);
+}
+
+// ---------- extract → highlight → complete ----------
+const FIELD_DEFS = [
+  ["product_id", "Product ID"],
+  ["product_name", "Product name"],
+  ["date_of_call", "Date of call"],
+  ["customer_name", "Full name"],
+  ["customer_phone", "Phone"],
+  ["customer_email", "Email"],
+  ["customer_address", "Address"],
+];
+// Form hierarchy: product row, person row, address row.
+const FIELD_ROWS = [
+  ["product_id", "product_name", "date_of_call"],
+  ["customer_name", "customer_phone", "customer_email"],
+  ["customer_address"],
+];
+const FIELD_LABELS = Object.fromEntries(FIELD_DEFS);
+let CATALOGUE = [];
+let EXTRACTED = null;
+
+async function runExtraction(file) {
+  renderFields(null); // reset to empty editors while we work
+  const fd = new FormData();
+  fd.append("file", file);
+  try {
+    const res = await fetch("/v1/extract", { method: "POST", body: fd });
+    EXTRACTED = await res.json();
+  } catch {
+    EXTRACTED = null;
+  }
+  renderFields(EXTRACTED);
+  refreshGate();
+}
+
+function renderFields(ext) {
+  const box = $("fields");
+  box.innerHTML = "";
+  for (const row of FIELD_ROWS) {
+    const rowEl = document.createElement("div");
+    rowEl.className = "field-row c" + row.length;
+    for (const key of row) {
+      const st = ext && ext.fields ? ext.fields[key] : null;
+      rowEl.appendChild(buildField(key, FIELD_LABELS[key], st));
+    }
+    box.appendChild(rowEl);
+  }
+}
+
+function buildField(key, label, st) {
+    const val = st && st.value ? st.value : "";
+    const found = !!(st && st.found && val);
+    const wrap = document.createElement("div");
+    wrap.className = "field";
+    const head = document.createElement("div");
+    head.className = "frow";
+    const lab = document.createElement("label");
+    lab.textContent = label;
+    const flag = document.createElement("span");
+    flag.className = "flag " + (found ? "ok" : "miss");
+    flag.textContent = found ? "\u2713 found" : "! please fill";
+    flag.id = "flag-" + key;
+    head.append(lab, flag);
+    wrap.appendChild(head);
+    let input;
+    if (key === "product_id") {
+      input = document.createElement("select");
+      const blank = document.createElement("option");
+      blank.value = "";
+      blank.textContent = "Select product…";
+      input.appendChild(blank);
+      for (const p of CATALOGUE) {
+        const o = document.createElement("option");
+        o.value = p.product_id;
+        o.textContent = `${p.product_name} (${p.product_id})`;
+        input.appendChild(o);
+      }
+      input.value = val && [...input.options].some((o) => o.value === val) ? val : "";
+      input.addEventListener("change", () => {
+        // keep the catalogue name in sync; the server re-checks the match
+        const p = CATALOGUE.find((x) => x.product_id === input.value);
+        const nameInput = $("f-product_name");
+        if (p && nameInput) nameInput.value = p.product_name;
+        refreshGate();
+      });
+    } else {
+      input = document.createElement("input");
+      input.type = "text";
+      input.value = val;
+      input.autocomplete = "off";
+      input.addEventListener("input", refreshGate);
+    }
+    input.id = "f-" + key;
+    input.className = found ? "found" : "missing";
+    if (!found) {
+      input.addEventListener("input", () => {
+        const ok = input.value.trim() !== "";
+        input.className = ok ? "found" : "missing";
+        const fl = $("flag-" + key);
+        if (fl) {
+          fl.textContent = ok ? "\u2713 completed" : "! please fill";
+          fl.className = "flag " + (ok ? "ok" : "miss");
+        }
+      });
+    }
+    wrap.appendChild(input);
+    return wrap;
+}
+
+function allFieldsFilled() {
+  return FIELD_DEFS.every(([key]) => {
+    const el = $("f-" + key);
+    return el && el.value.trim() !== "";
+  });
+}
+
+function refreshGate() {
+  const btn = $("score-btn");
+  const ok = fileInput.files[0] && allFieldsFilled();
+  btn.disabled = !ok;
+  btn.textContent = fileInput.files[0]
+    ? (ok ? "Score transcript" : "Fill all highlighted fields to score")
+    : "Score transcript";
+}
+
+$("tpl-link").addEventListener("click", (e) => {  e.preventDefault();
+  const tpl = [
+    "Product ID: product_b", "Product Name: Product B", "Date of Call: 2026-10-17",
+    "Customer Name: ", "Customer Phone: ", "Customer Email: ", "Customer Address: ",
+    "---", "(paste the call transcript below this line)",
+  ].join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([tpl], { type: "text/plain" }));
+  a.download = "transcript_template.txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+$("copy-example").addEventListener("click", async () => {
+  const btn = $("copy-example");
+  try {
+    await navigator.clipboard.writeText($("ideal-example").textContent);
+    btn.textContent = "Copied ✓";
+  } catch {
+    btn.textContent = "Select & copy manually";
+  }
+  setTimeout(() => { btn.textContent = "Copy example"; }, 1600);
+});
+
+function pillFor(resolution) {
+  if (resolution === "Interested") return ["green", "Interested \u2014 continue"];
+  if (resolution === "Not interested") return ["red", "Not interested \u2014 stop"];
+  return ["amber", "Needs review"];
+}
+function fmtTime(iso) {
+  try { return new Date(iso).toLocaleString(); } catch { return iso; }
+}
+
+async function loadProducts() {
+  const [products, models] = await Promise.all([
+    fetch("/v1/products").then((r) => r.json()),
+    fetch("/v1/models").then((r) => r.json()),
+  ]);
+  CATALOGUE = products;
+  const sel = $("dash-product");
+  sel.innerHTML = "";
+  for (const p of CATALOGUE) {
+    const o = document.createElement("option");
+    o.value = p.product_id;
+    o.textContent = `${p.product_name} (${p.product_id})`;
+    sel.appendChild(o);
+  }
+  const msel = $("model");
+  msel.innerHTML = "";
+  for (const m of models) {
+    const o = document.createElement("option");
+    o.value = m.name;
+    o.textContent = m.label;
+    o.title = m.description;
+    msel.appendChild(o);
+  }
+  const showBlurb = () => {
+    const m = models.find((x) => x.name === msel.value);
+    $("model-blurb").textContent = m ? m.description : "";
+    const styles = (m && m.prompt_styles) || [];
+    const wrap = $("pstyle-wrap"), psel = $("pstyle");
+    if (styles.length) {
+      wrap.style.display = "block";
+      psel.innerHTML = "";
+      for (const s of styles) {
+        const o = document.createElement("option");
+        o.value = s.id;
+        o.textContent = s.label;
+        o.title = s.description;
+        psel.appendChild(o);
+      }
+      const showStyleBlurb = () => {
+        const s = styles.find((x) => x.id === psel.value);
+        $("pstyle-blurb").textContent = s ? s.description : "";
+      };
+      psel.onchange = showStyleBlurb;
+      showStyleBlurb();
+    } else {
+      wrap.style.display = "none";
+    }
+  };
+  msel.addEventListener("change", showBlurb);
+  showBlurb();
+  renderFields(null);
+  refreshGate();
+}
+
+function renderEvidence(body) {
+  const box = $("res-evidence");
+  box.innerHTML = "";
+  const verdict = document.createElement("div");
+  verdict.className = "evi-verdict";
+  verdict.textContent = body.evidence_verdict || body.evidence;
+  box.appendChild(verdict);
+  if (body.evidence_prompt && body.evidence_prompt.length) {
+    const det = document.createElement("details");
+    det.className = "evi-prompt";
+    const sum = document.createElement("summary");
+    sum.textContent = "Custom prompt (" + body.evidence_prompt.length + " hypotheses)";
+    det.appendChild(sum);
+    body.evidence_prompt.forEach((h) => {
+      const p = document.createElement("div");
+      p.className = "evi-hyp";
+      p.textContent = h;
+      det.appendChild(p);
+    });
+    box.appendChild(det);
+  }
+  const cues = body.evidence_cues || [];
+  const strong = cues.filter((c) => c.strong !== false);
+  const weak = cues.filter((c) => c.strong === false);
+  if (strong.length) {
+    const ul = document.createElement("ul");
+    ul.className = "evi-cues";
+    strong.forEach((c) => {
+      const li = document.createElement("li");
+      const chip = document.createElement("span");
+      chip.className = "cue-chip";
+      chip.textContent = "\u201c" + c.cue + "\u201d";
+      li.appendChild(chip);
+      if (c.speaker) {
+        const sp = document.createElement("span");
+        sp.className = "cue-spk";
+        sp.textContent = c.speaker;
+        li.appendChild(sp);
+      }
+      const q = document.createElement("span");
+      q.className = "cue-quote";
+      q.textContent = c.quote;
+      li.appendChild(q);
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+  }
+  if (weak.length) {
+    const w = document.createElement("div");
+    w.className = "evi-weak";
+    w.textContent = "Also mentioned (weak signals, not intent evidence): " +
+      weak.map((c) => "\u201c" + c.cue + "\u201d").join(", ");
+    box.appendChild(w);
+  }
+  if (!strong.length && body.evidence_excerpt) {
+    const ex = document.createElement("div");
+    ex.className = "evi-excerpt";
+    ex.textContent = body.evidence_excerpt;
+    box.appendChild(ex);
+  }
+}
+
+$("score-btn").addEventListener("click", async () => {
+  const err = $("error"), result = $("result");
+  err.style.display = "none"; result.style.display = "none";
+  $("result-empty").style.display = "block";
+  const f = fileInput.files[0];
+  if (!f) { err.textContent = "Please choose a .txt transcript first."; err.style.display = "block"; return; }
+  if (!allFieldsFilled()) {
+    err.textContent = "All seven fields are required — complete the highlighted ones first.";
+    err.style.display = "block"; return;
+  }
+  const btn = $("score-btn");
+  btn.disabled = true; btn.textContent = "Scoring\u2026";
+  try {
+    const fd = new FormData();
+    fd.append("file", f);
+    fd.append("mid", $("mid").value.trim());
+    fd.append("model", $("model").value);
+    if ($("pstyle-wrap").style.display !== "none") {
+      fd.append("prompt_style", $("pstyle").value);
+    }
+    for (const [key] of FIELD_DEFS) fd.append(key, $("f-" + key).value.trim());
+    const res = await fetch("/v1/score", { method: "POST", body: fd });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.detail || "Scoring failed.");
+    const [cls, text] = pillFor(body.engine_resolution);
+    const pill = $("res-pill");
+    pill.className = "pill " + cls; pill.textContent = text;
+    $("res-bar").style.width = Math.round(body.interest_score * 100) + "%";
+    $("res-score").textContent =
+      body.interest_score.toFixed(2) + " \u00b7 " + body.mid +
+      " (" + body.customer_status + ")" + (body.opt_out_detected ? " \u00b7 opt-out" : "") +
+      (body.scored_scope === "customer" ? " \u00b7 customer-only" : "") +
+      (body.insufficient_signal ? " \u00b7 needs context" : "");
+    renderEvidence(body);
+    $("result-empty").style.display = "none";
+    result.style.display = "block";
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = "block";
+  } finally {
+    refreshGate();
+  }
+});
+
+// ---------- dashboard ----------
+$("dash-product").addEventListener("change", loadDashboard);
+
+async function loadDashboard() {
+  const pid = $("dash-product").value;
+  if (!pid) return;
+  const [m, rows] = await Promise.all([
+    fetch(`/v1/products/${encodeURIComponent(pid)}/metrics`).then((r) => r.json()),
+    fetch(`/v1/products/${encodeURIComponent(pid)}/results`).then((r) => r.json()),
+  ]);
+  $("dash-title").textContent = `${m.product_name} · performance`;
+  $("k-total").textContent = m.total_customers;
+  $("k-int").textContent = m.total_customers
+    ? Math.round((m.interested / m.total_customers) * 100) + "%" : "–";
+  $("k-avg").textContent = m.avg_interest_score != null ? m.avg_interest_score.toFixed(2) : "–";
+  $("k-rev").textContent = m.needs_review;
+  $("k-opt").textContent = m.opt_out_count;
+  drawDonut(m.interested, m.not_interested, m.needs_review, m.total_customers);
+  const labels = ["<0.2", "0.2–0.4", "0.4–0.6", "0.6–0.8", "0.8–1.0"];
+  const max = Math.max(1, ...m.score_buckets);
+  $("hbars").innerHTML = "";
+  m.score_buckets.forEach((n, i) => {
+    const row = document.createElement("div");
+    row.className = "hrow";
+    row.innerHTML = `<span class="t">${labels[i]}</span>
+      <div class="htrack"><div style="width:${Math.round((n / max) * 100)}%"></div></div>
+      <span class="n">${n}</span>`;
+    $("hbars").appendChild(row);
+  });
+  const amax = Math.max(1, ...m.activity.map((a) => a.count));
+  $("activity").innerHTML = "";
+  for (const a of m.activity) {
+    const d = document.createElement("div");
+    d.className = "aday";
+    d.title = `${a.date}: ${a.count} scored`;
+    d.innerHTML = `<div class="acol${a.count ? "" : " zero"}" style="height:${Math.max(5, Math.round((a.count / amax) * 100))}%"></div>
+      <div class="adate">${a.date.slice(8)}</div>`;
+    $("activity").appendChild(d);
+  }
+  const tbody = $("results-body");
+  tbody.innerHTML = "";
+  $("results-empty").style.display = rows.length ? "none" : "";
+  SCORE_ROWS = rows;
+  applySort();
+  // wire header clicks once
+  if (!SORT_WIRED) {
+    document.querySelectorAll("table.scores th[data-key]").forEach((th) => {
+      th.addEventListener("click", () => {
+        const key = th.dataset.key;
+        if (SORT.key === key) {
+          SORT.dir = SORT.dir === "asc" ? "desc" : "asc";
+        } else {
+          // sensible first direction per column: newest/highest first
+          SORT = { key, dir: (key === "name" || key === "resolution" || key === "model") ? "asc" : "desc" };
+        }
+        applySort();
+      });
+    });
+    SORT_WIRED = true;
+  }
+}
+
+// default: newest update first (▼ = decreasing)
+let SORT = { key: "updated", dir: "desc" };
+let SORT_WIRED = false;
+let SCORE_ROWS = [];
+
+function sortVal(r, key) {
+  switch (key) {
+    case "name": return (r.full_name || "").toLowerCase();
+    case "resolution": return r.engine_resolution || "\uffff";
+    case "score": return r.interest_score != null ? r.interest_score : -1;
+    case "call_date": return r.call_date || "";
+    case "model": return (r.model_version || "").toLowerCase();
+    case "updated": return r.last_evaluated_at || "";
+    default: return "";
+  }
+}
+
+function applySort() {
+  const { key, dir } = SORT;
+  const rows = [...SCORE_ROWS].sort((a, b) => {
+    const va = sortVal(a, key), vb = sortVal(b, key);
+    // missing values always sink to the bottom, either direction
+    const aMiss = va === "" || va === "\uffff" || va === -1;
+    const bMiss = vb === "" || vb === "\uffff" || vb === -1;
+    if (aMiss && bMiss) return 0;
+    if (aMiss) return 1;
+    if (bMiss) return -1;
+    if (va < vb) return dir === "asc" ? -1 : 1;
+    if (va > vb) return dir === "asc" ? 1 : -1;
+    return 0;
+  });
+  document.querySelectorAll("table.scores th[data-key]").forEach((th) => {
+    const active = th.dataset.key === key;
+    th.classList.toggle("sorted", active);
+    th.querySelector(".tri").textContent = active ? (dir === "asc" ? "▲" : "▼") : "▲";
+  });
+  const tbody = $("results-body");
+  tbody.innerHTML = "";
+  for (const r of rows) {
+    const [cls, text] = pillFor(r.engine_resolution);
+    const tr = document.createElement("tr");
+    const name = document.createElement("td");
+    name.innerHTML = `<div class="c-name"></div><div class="c-mid"></div>`;
+    name.querySelector(".c-name").textContent = r.full_name || "Unknown name";
+    name.querySelector(".c-mid").textContent = r.mid;
+    const res = document.createElement("td");
+    res.innerHTML = `<span class="pill ${cls}">${text}</span>`;
+    const sc = document.createElement("td");
+    const pct = r.interest_score != null ? Math.round(r.interest_score * 100) : 0;
+    sc.innerHTML = `<div class="c-score"><div class="mini"><div style="width:${pct}%"></div></div><span>${
+      r.interest_score != null ? r.interest_score.toFixed(2) : "–"}</span></div>`;
+    const mo = document.createElement("td");
+    mo.innerHTML = `<span class="c-model"></span>`;
+    mo.querySelector(".c-model").textContent = r.model_version;
+    const cd = document.createElement("td");
+    cd.innerHTML = `<span class="c-time"></span>`;
+    cd.querySelector(".c-time").textContent = r.call_date || "–";
+    const wh = document.createElement("td");
+    wh.innerHTML = `<span class="c-time"></span>`;
+    wh.querySelector(".c-time").textContent = fmtTime(r.last_evaluated_at);
+    tr.append(name, res, sc, cd, mo, wh);
+    tbody.appendChild(tr);
+  }
+}
+
+function drawDonut(g, r, a, total) {
+  const svg = $("donut");
+  svg.innerHTML = "";
+  const C = 2 * Math.PI * 44;
+  if (!total) {
+    svg.innerHTML = `<circle cx="60" cy="60" r="44" fill="none" stroke="#eee" stroke-width="16"/>`;
+    $("donut-legend").innerHTML = "No data yet.";
+    return;
+  }
+  const segs = [
+    [g, "#15803d", "Interested"],
+    [r, "#b91c1c", "Not interested"],
+    [a, "#d97706", "Needs review"],
+  ];
+  let acc = 0;
+  const NS = "http://www.w3.org/2000/svg";
+  const grp = document.createElementNS(NS, "g");
+  grp.setAttribute("transform", "rotate(-90 60 60)");
+  for (const [n, color] of segs) {
+    if (!n) continue;
+    const frac = n / total;
+    const c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", 60); c.setAttribute("cy", 60); c.setAttribute("r", 44);
+    c.setAttribute("fill", "none"); c.setAttribute("stroke", color);
+    c.setAttribute("stroke-width", 16);
+    c.setAttribute("stroke-dasharray", `${frac * C} ${C - frac * C}`);
+    c.setAttribute("stroke-dashoffset", -acc * C);
+    grp.appendChild(c);
+    acc += frac;
+  }
+  svg.appendChild(grp);
+  $("donut-legend").innerHTML = segs
+    .map(([n, color, label]) => `<span class="swatch" style="background:${color}"></span>${label}: <b>${n}</b><br>`)
+    .join("");
+}
+
+loadProducts().then(() => {
+  const hash = (location.hash || "").replace("#", "");
+  showTab(["ingest", "dashboard", "about"].includes(hash) ? hash : "ingest");
+});
+</script>
+</body>
+</html>
